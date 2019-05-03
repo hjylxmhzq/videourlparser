@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        视频地址解析
+    </title>
+    <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+    <style>
+        .infoblock {
+            word-break: break-all;
+            margin: 10px;
+            box-shadow: 0 0 11px 2px #e6e6e6;
+            padding: 20px;
+        }
+
+        #submit {
+            height: 30px;
+        }
+
+        #videourl {
+            border: 1px solid #aaa;
+            padding: 5px;
+            width: 70%;
+            box-shadow: 0 0 5px 0 #aaa;
+        }
+    </style>
+</head>
+
+<body>
+    <input id="videourl" typr="text" value='' placeholder="请输入视频地址"></input>
+    <button id='submit'>确定</button>
+    <div id='info' stype="white-space: wrap;word-break: break-all"></div>
+    <script>
+        var checker;
+        $('#submit').bind('click', function (e) {
+            var url = $('#videourl')[0].value;;
+            url = encodeURIComponent(url);
+            e.preventDefault();
+            $.getJSON('http://tony-space.top:8006/getvideoinfo?videourl=' + url, function (data, status) {
+                if (status === 'success') {
+                    $('#info')[0].innerHTML = '解析中...';
+                    localStorage.setItem('id', data['id'])
+                    checker = setInterval(getinfo, 1000);
+                }
+            })
+        })
+        function getinfo() {
+            var url = $('#videourl')[0].value;;
+            url = encodeURIComponent(url);
+            $.getJSON('http://tony-space.top:8006/getbyid?id=' + localStorage.getItem('id'), function (data, status) {
+                if (status === 'success' && data['stdout'].length > 0) {
+                    var info = data['stdout'][0];
+                    var index = info.indexOf('Real URLs');
+                    info = info.substr(index);
+                    info = info.split('\n');
+                    var html = '';
+                    for (var i in info) {
+                        if (info[i].length === 0) {
+                            continue;
+                        }
+                        html += '<div class="infoblock">' + info[i] + '</div>';
+                    }
+                    $('#info')[0].innerHTML = html;
+                    clearInterval(checker);
+                }
+            })
+        }
+    </script>
+</body>
+
+</html>
