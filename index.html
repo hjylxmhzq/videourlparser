@@ -5,6 +5,7 @@
     <title>
         视频地址解析
     </title>
+    <meta charset="utf-8" />
     <script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
     <style>
         .infoblock {
@@ -16,6 +17,19 @@
 
         #submit {
             height: 30px;
+        }
+
+        .API {
+            margin: 30px 30px 30px 20px;
+            box-shadow: 0 0 10px 0 #ccc;
+            padding: 10px;
+            font-size: 20px;
+            color: blueviolet;
+        }
+
+        .API>p {
+            font-size: 14px;
+            color: black;
         }
 
         #videourl {
@@ -31,6 +45,10 @@
     <input id="videourl" typr="text" value='' placeholder="请输入视频地址"></input>
     <button id='submit'>确定</button>
     <div id='info' stype="white-space: wrap;word-break: break-all"></div>
+    <div class="API">API
+        <p>添加解析请求：<em>http://tony-space.top:8006/getvideoinfo?videourl=[视频URL]</em>，此解析请求会返回一个json，包含请求的ID，用来查看解析状态</p>
+        <p>查看解析状态：<em>http://tony-space.top:8006/getbyid?id=[请求返回的ID]</em>，若解析完成会返回一个json，包含了视频地址解析的相关信息</p>
+    </div>
     <script>
         var checker;
         $('#submit').bind('click', function (e) {
@@ -45,6 +63,7 @@
                 }
             })
         })
+
         function getinfo() {
             var url = $('#videourl')[0].value;;
             url = encodeURIComponent(url);
