@@ -1,14 +1,28 @@
 'use strict';
 
 const Koa = require('koa');
-const { spawn } = require('child_process');
+const {
+    spawn
+} = require('child_process');
 
 const app = new Koa();
 let threadset = new Map();
+let cleaner;
+
+function cleanProcess() {
+    clearTimeout(cleaner);
+    cleaner = setTimeout(function() {
+        for (let id of threadset.keys()) {
+            if (threadset.get(id).yougetObj) {
+                process.kill(threadset.get(id).yougetObj.pid, 'SIGKILL');
+            }
+        }
+    }, 600000);
+}
 
 function getVideoInfo(url, id, download = false) {
     //console.log(url);
-    if (threadset.size > 20) {
+    if (threadset.size > 10) {
         let longesttime = 1e100;
         let tempid = '';
         for (let i of threadset.keys()) {
@@ -28,20 +42,27 @@ function getVideoInfo(url, id, download = false) {
         yougetObj: youget
     });
     youget.stdout.on('data', data => {
-        threadset.get(id).stdout.push(data.toString());
+        if (threadset.has(id)) {
+            threadset.get(id).stdout.push(data.toString());
+        }
     });
 
     youget.stderr.on('data', data => {
-        threadset.get(id).stderr.push(data.toString());
+        if (threadset.has(id)) {
+            threadset.get(id).stderr.push(data.toString());
+        }
     });
 
     youget.on('close', code => {
-        //console.log(threadset.get(id));
-        threadset.get(id).yougetObj = null;
+        if (threadset.has(id)) {
+            //console.log(threadset.get(id));
+            threadset.get(id).yougetObj = null;
+        }
     });
 }
 
 app.use(async (ctx, next) => {
+    cleanProcess();
     ctx.response.set({
         'Access-Control-Allow-Origin': '*'
     })
@@ -54,7 +75,9 @@ app.use(async (ctx, next) => {
         if (ctx.query['videourl']) {
             getVideoInfo(ctx.query['videourl'], id);
             ctx.type = 'application/json';
-            ctx.body = JSON.stringify({ id });
+            ctx.body = JSON.stringify({
+                id
+            });
         }
     } else {
         await next();
@@ -79,6 +102,21 @@ app.use(async (ctx, next) => {
             templist.push(id);
             ctx.type = 'application/json';
             ctx.body = JSON.stringify(templist);
+        }
+        await next();
+    } else {
+        await next();
+    }
+})
+
+
+app.use(async (ctx, next) => {
+    if (ctx.method === "GET" && ctx.path === "/clear") {
+        let templist = [];
+        for (let id of threadset.keys()) {
+            if (threadset.get(id).yougetObj) {
+                process.kill(threadset.get(id).yougetObj.pid, 'SIGKILL');
+            }
         }
         await next();
     } else {
